@@ -23,40 +23,72 @@ namespace TestCount.App
     public partial class MainWindow : Window
     {
         private const string TeamProjectCollectionPath = "http://tfs:8082/defaultcollection";
-        //private const string TeamProjectCollectionPath = "http://192.168.1.12:8080/tfs/defaultcollection";
 
         private TfsTeamProjectCollection teamProjectCollection;
         private VersionControlServer versionControl;
         private TestChangeCalculator infoProvider;
-        private List<AggregateTestData> groupedData;
-        private List<TestChangeInfo> testData;
+        private List<ProcessedFileChangeInfo> testData;
+        private IIdentityManagementService identityService;
         private ISourceControlProxy sourceControlProxy;
 
         public MainWindow()
         {
             InitializeComponent();
-            
+
             this.Loaded += new RoutedEventHandler(MainWindow_Loaded);
         }
 
         void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            //var credencial = new NetworkCredential(@"TestUser1", "Passw0rd", "WIN-GS9GMUJITS8");
-            //var credencial = new NetworkCredential(@"TestUser1");
-            //his.teamProjectCollection = new TfsTeamProjectCollection(new Uri(TeamProjectCollectionPath), credencial);
             this.teamProjectCollection = new TfsTeamProjectCollection(new Uri(TeamProjectCollectionPath));
-            //this.teamProjectCollection = new TfsTeamProjectCollection(new Uri(TeamProjectCollectionPath), new UICredentialsProvider());
             this.teamProjectCollection.Authenticate();
 
             this.teamProjectCollection.EnsureAuthenticated();
             this.versionControl = this.teamProjectCollection.GetService<VersionControlServer>();
             this.sourceControlProxy = new TfsProxy(this.versionControl);
             this.infoProvider = new TestChangeCalculator(this.sourceControlProxy);
+            this.identityService = this.teamProjectCollection.GetService<IIdentityManagementService>();
 
-            this.pickerFrom.SelectedValue = new DateTime(2012, 6, 9, 7, 0, 0);
-            this.pickerTo.SelectedValue = new DateTime(2012, 10, 16, 23, 0, 0);
-            this.pathTextBox.Text = "$/WPF_Scrum/Current/";
+            //this.pickerFrom.SelectedValue = new DateTime(2012, 10, 19, 7, 0, 0);
+            this.pickerFrom.SelectedValue = new DateTime(2012, 11, 1, 23, 0, 0);
+            //this.pickerTo.SelectedValue = new DateTime(2012, 11, 28, 23, 0, 0);
+            this.pickerTo.SelectedValue = new DateTime(2012, 11, 10, 23, 0, 0);
+            this.pathTextBox.Text = "$/WPF_Scrum/Current/Core/Data";
+
+            this.testsPerGroupView.IdentityService = new TfsIdentityServiceProxy(this.identityService);
+
+            var iden = this.testsPerGroupView.IdentityService.GetUserIdentities();
+            iden = this.testsPerGroupView.IdentityService.GetUserIdentities();
+
+            //2.Read the group represnting the root node
+            var rootIdentity = this.identityService.ReadIdentity(IdentitySearchFactor.AccountName, @"[WPF_Scrum]\Contributors", MembershipQuery.Direct, ReadIdentityOptions.None);
+
+            //3.Recursively parse the members of the group
+            DisplayGroupTree(this.identityService, rootIdentity, 0);
         }
+
+         private static void DisplayGroupTree(IIdentityManagementService ims, TeamFoundationIdentity node, 
+             int level)
+         {
+             DisplayNode(node, level);
+  
+             if (!node.IsContainer)
+                 return;
+  
+             TeamFoundationIdentity[] nodeMembers = ims.ReadIdentities(node.Members, MembershipQuery.Direct, 
+                 ReadIdentityOptions.None);
+  
+             int newLevel = level + 1;
+             foreach (TeamFoundationIdentity member in nodeMembers)
+                 DisplayGroupTree(ims, member, newLevel);
+         }
+  
+         private static void DisplayNode(TeamFoundationIdentity node, int level)
+         {
+             for (int tabCount = 0; tabCount < level; tabCount++) Console.Write("\t");
+  
+             Console.WriteLine(node.DisplayName);
+         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -68,14 +100,17 @@ namespace TestCount.App
             }
 
             this.LoadData();
-            this.RefreshUI();
+            //this.RefreshUI();
         }
 
         private void LoadData()
         {
             var fileChanges = GetFileChanges();
             this.CalculateTestData(fileChanges);
-            this.CreateGroupedTestData();
+            //this.CreateGroupedTestData();
+
+            this.DataContext = null;
+            this.DataContext = this.testData;
         }
 
         private IList<FileChangeInfo> GetFileChanges()
@@ -89,71 +124,15 @@ namespace TestCount.App
 
         private void CalculateTestData(IList<FileChangeInfo> fileChanges)
         {
-            this.testData = 
+            this.testData =
                 this.infoProvider
                 .GetTestMethodData(fileChanges)
-                .OrderByDescending(i => i.TestCountChage).ToList();
-        }
-
-        private void CreateGroupedTestData()
-        {
-            this.groupedData = this.testData
-                .GroupBy(i => i.Member)
-                .Select(g => new AggregateTestData() { Comitter = g.Key, TestCountDelta = g.Sum(h => h.TestCountChage) })
-                .OrderBy(v => v.TestCountDelta)
-                .ToList();
+                .OrderByDescending(i => i.AttributeChanges.TestCountChange).ToList();
         }
 
         private void RefreshUI()
         {
             this.DataContext = null;
-            this.DataContext = this.groupedData;
-        }
-
-        private void CleartAndHideTree()
-        {
-            this.changesetsTree.ItemsSource = null;
-            this.changesetsTree.Visibility = System.Windows.Visibility.Collapsed;
-        }
-
-        private void LoadChangesetDataAndShowTree(string comitter)
-        {
-            var changes = this.GetChangesForUser(comitter);
-
-            var detailsWindows = new DetailsWindow();
-            detailsWindows.DataContext = changes;
-
-            detailsWindows.ShowDialog();
-
-            //this.changesetsTree.ItemsSource = changes;
-            //this.changesetsTree.Visibility = System.Windows.Visibility.Visible;
-        }
-
-        private IEnumerable GetChangesForUser(string user)
-        {
-            return
-                this.testData
-                .Where(changeInfo => changeInfo.Member == user);
-                //.GroupBy(changeInfo => changeInfo.ChangesetId)
-                //.OrderBy(changeInfoGroup => changeInfoGroup.Key)
-                //.Select(group => new { Changeset = group.Key, Items = group.OrderBy(ti => ti.ItemPath).ToList() })
-                //.ToList();
-        }
-
-        private void ChartSelectionBehavior_SelectionChanged(object sender, Telerik.Windows.Controls.ChartView.ChartSelectionChangedEventArgs e)
-        {
-            var selectionBehavior = sender as ChartSelectionBehavior;
-
-            if (selectionBehavior.Chart.SelectedPoints.Count == 0)
-            {
-                this.CleartAndHideTree();
-            }
-            else
-            {
-                var data = e.AddedPoints[0].DataItem as AggregateTestData;
-
-                this.LoadChangesetDataAndShowTree(data.Comitter);
-            }
         }
 
         private void ExportButton_Click(object sender, RoutedEventArgs e)
@@ -188,9 +167,11 @@ namespace TestCount.App
                     IdentitySearchFactor.AccountName,
                     testMethodInfo.Member,
                     MembershipQuery.Expanded,
-                    ReadIdentityOptions.None);
+                    ReadIdentityOptions.ExtendedProperties);
 
-                var infoAsCSVTest = string.Format(CultureInfo.InvariantCulture, "{0}, {1}, {2}, {3}", tfsIdentity.DisplayName, testMethodInfo.ItemPath, testMethodInfo.ChangesetId, testMethodInfo.TestCountChage);
+                var infoAsCSVTest = string.Format(CultureInfo.InvariantCulture, "{0}, {1}, {2}, {3}", tfsIdentity.DisplayName, testMethodInfo.ItemPath, testMethodInfo.ChangesetId, testMethodInfo.AttributeChanges.TestCountChange);
+
+                //DisplayGroupTree2(this.identityService, tfsIdentity, 0);
 
                 dataBuild.AppendLine(infoAsCSVTest);
             }

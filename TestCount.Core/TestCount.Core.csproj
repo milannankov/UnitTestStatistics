@@ -85,12 +85,17 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FileAttributes.cs" />
     <Compile Include="FileChangeInfo.cs" />
+    <Compile Include="GroupIdentity.cs" />
+    <Compile Include="IIdentityServiceProxy.cs" />
     <Compile Include="ISourceControlProxy.cs" />
     <Compile Include="QueryParameters.cs" />
-    <Compile Include="TestChangeInfo.cs" />
+    <Compile Include="ProcessedFileChangeInfo.cs" />
     <Compile Include="TestChangeCalculator.cs" />
+    <Compile Include="TfsIdentityServiceProxy.cs" />
     <Compile Include="TfsProxy.cs" />
+    <Compile Include="UserIdentity.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">

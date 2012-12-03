@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.TeamFoundation.VersionControl.Client;
+using System.IO;
 
 namespace TestCount.Core
 {
@@ -15,9 +16,9 @@ namespace TestCount.Core
             this.sourceControlProxy = sourceControlProxy;
         }
 
-        public List<TestChangeInfo> GetTestMethodData(IList<FileChangeInfo> fileChanges)
+        public List<ProcessedFileChangeInfo> GetTestMethodData(IList<FileChangeInfo> fileChanges)
         {
-            var globalTestInfo = new List<TestChangeInfo>();
+            var globalTestInfo = new List<ProcessedFileChangeInfo>();
             var fileChangesPerFile = fileChanges.GroupBy(fc => fc.ItemPath).ToList();
 
             foreach (var groupFileChangeItem in fileChangesPerFile)
@@ -28,21 +29,21 @@ namespace TestCount.Core
                 globalTestInfo.AddRange(testInfos);
             }
 
-            var filteredInfo = globalTestInfo.Where(i => i.TestCountChage != 0).ToList();
+            var filteredInfo = globalTestInfo.Where(i => i.AttributeChanges.TestCountChange != 0).ToList();
 
             return filteredInfo;
         }
 
-        
+
         private IList<FileChangeInfo> unhandledChangeInfos = new List<FileChangeInfo>();
 
-        private IEnumerable<TestChangeInfo> GetTestMethodInfosForFile(string filePath, IList<FileChangeInfo> changeInfos)
+        private IEnumerable<ProcessedFileChangeInfo> GetTestMethodInfosForFile(string filePath, IList<FileChangeInfo> changeInfos)
         {
-            var testInfos = new List<TestChangeInfo>();
+            var testInfos = new List<ProcessedFileChangeInfo>();
 
             foreach (var changeInfoItem in changeInfos)
             {
-                var info = new TestChangeInfo();
+                var info = new ProcessedFileChangeInfo();
                 info.Member = changeInfoItem.Member;
                 info.ChangesetId = changeInfoItem.ChangesetId;
                 info.ItemPath = changeInfoItem.ItemPath;
@@ -57,7 +58,7 @@ namespace TestCount.Core
                 if (cleanedChangeType == 0)
                 {
                     var fileText = this.sourceControlProxy.GetFileText(changeInfoItem.ItemPath, changeInfoItem.ChangesetId);
-                    info.TestCountChage = this.GetTestMethodCount(fileText);
+                    info.AttributeChanges = this.GetChangedAttributes(fileText);
                 }
                 else if (cleanedChangeType == (ChangeType.None | ChangeType.SourceRename))
                 {
@@ -66,17 +67,17 @@ namespace TestCount.Core
                 else if (cleanedChangeType == (ChangeType.Delete | ChangeType.SourceRename))
                 {
                     var fileText = this.sourceControlProxy.GetFileText(changeInfoItem.ItemPath, changeInfoItem.ChangesetId + previousVersionDelta);
-                    info.TestCountChage = -this.GetTestMethodCount(fileText);
+                    info.AttributeChanges = this.GetChangedAttributes(fileText);
                 }
                 else if (cleanedChangeType == (ChangeType.Delete))
                 {
                     var fileText = this.sourceControlProxy.GetFileText(changeInfoItem.ItemPath, changeInfoItem.ChangesetId + previousVersionDelta);
-                    info.TestCountChage = -this.GetTestMethodCount(fileText);
+                    info.AttributeChanges = this.GetChangedAttributes(fileText);
                 }
                 else if (cleanedChangeType == (ChangeType.Undelete))
                 {
                     var fileText = this.sourceControlProxy.GetFileText(changeInfoItem.ItemPath, changeInfoItem.ChangesetId);
-                    info.TestCountChage = this.GetTestMethodCount(fileText);
+                    info.AttributeChanges = this.GetChangedAttributes(fileText);
                 }
                 else if (cleanedChangeType == (ChangeType.Delete | ChangeType.Rename))
                 {
@@ -85,27 +86,27 @@ namespace TestCount.Core
                 else if (cleanedChangeType == (ChangeType.Rename | ChangeType.SourceRename | ChangeType.Edit))
                 {
                     var fileText = this.sourceControlProxy.GetFileText(changeInfoItem.ItemPath, changeInfoItem.ChangesetId);
-                    info.TestCountChage = this.GetTestMethodCount(fileText);
+                    info.AttributeChanges = this.GetChangedAttributes(fileText);
                 }
                 else if (cleanedChangeType == ChangeType.Rename)
                 {
                     var fileText = this.sourceControlProxy.GetFileText(changeInfoItem.ItemPath, changeInfoItem.ChangesetId);
-                    info.TestCountChage = this.GetTestMethodCount(fileText);
+                    info.AttributeChanges = this.GetChangedAttributes(fileText);
                 }
                 else if (cleanedChangeType == (ChangeType.Rename | ChangeType.Edit))
                 {
                     var fileText = this.sourceControlProxy.GetFileText(changeInfoItem.ItemPath, changeInfoItem.ChangesetId);
-                    info.TestCountChage = this.GetTestMethodCount(fileText);
+                    info.AttributeChanges = this.GetChangedAttributes(fileText);
                 }
                 else if (cleanedChangeType == ChangeType.Add)
                 {
                     var fileText = this.sourceControlProxy.GetFileText(changeInfoItem.ItemPath, changeInfoItem.ChangesetId);
-                    info.TestCountChage = this.GetTestMethodCount(fileText);
+                    info.AttributeChanges = this.GetChangedAttributes(fileText);
                 }
                 else if (cleanedChangeType == (ChangeType.Add | ChangeType.Edit))
                 {
                     var fileText = this.sourceControlProxy.GetFileText(changeInfoItem.ItemPath, changeInfoItem.ChangesetId);
-                    info.TestCountChage = this.GetTestMethodCount(fileText);
+                    info.AttributeChanges = this.GetChangedAttributes(fileText);
                 }
                 else if (cleanedChangeType == (ChangeType.Add | ChangeType.Edit | ChangeType.SourceRename))
                 {
@@ -114,7 +115,7 @@ namespace TestCount.Core
 
                     var fileDiff = this.sourceControlProxy.DiffFileVersions(changeInfoItem.ItemPath, previousVersion, currentVersion);
 
-                    info.TestCountChage += this.GetTestMethodCountDelta(fileDiff);
+                    info.AttributeChanges = this.GetChangedAttributesFromDiff(fileDiff);
                 }
                 else if (cleanedChangeType == (ChangeType.Edit))
                 {
@@ -123,7 +124,7 @@ namespace TestCount.Core
 
                     var fileDiff = this.sourceControlProxy.DiffFileVersions(changeInfoItem.ItemPath, previousVersion, currentVersion);
 
-                    info.TestCountChage += this.GetTestMethodCountDelta(fileDiff);
+                    info.AttributeChanges = this.GetChangedAttributesFromDiff(fileDiff);
                 }
                 else if (cleanedChangeType == (ChangeType.Encoding))
                 {
@@ -139,7 +140,7 @@ namespace TestCount.Core
 
             return testInfos;
         }
-  
+
         private ChangeType RemoveIrrelevantFlags(FileChangeInfo changeInfoItem)
         {
             var cleanedChangeType =
@@ -151,35 +152,59 @@ namespace TestCount.Core
             return cleanedChangeType;
         }
 
-        private int GetTestMethodCountDelta(string fileText)
+        private FileAttributes GetChangedAttributesFromDiff(string fileText)
         {
-            int delta = 0;
-            var testMethodRegEx = new Regex(@".*\[TestMethod\]", RegexOptions.Multiline);
-            var numberOfMatches = testMethodRegEx.Matches(fileText);
+            var attributes = new FileAttributes();
+            string line;
 
-            foreach (Match matchItem in numberOfMatches)
+            using (var r = new StringReader(fileText))
             {
-                if (matchItem.Value.StartsWith("+"))
+                while ((line = r.ReadLine()) != null)
                 {
-                    delta++;
-                }
+                    if (line.StartsWith("+"))
+                    {
+                        attributes.LinesCountChange++;
 
-                if (matchItem.Value.StartsWith("-"))
-                {
-                    delta--;
+                        if (line.Contains(@"[TestMethod]"))
+                        {
+                            attributes.TestCountChange++;
+                        }
+                    }
+
+                    if (line.StartsWith("-"))
+                    {
+                        attributes.LinesCountChange--;
+
+                        if (line.Contains(@"[TestMethod]"))
+                        {
+                            attributes.TestCountChange--;
+                        }
+                    }
                 }
             }
 
-            return delta;
+            return attributes;
         }
 
-        private int GetTestMethodCount(string fileText)
+        private FileAttributes GetChangedAttributes(string fileText)
         {
-            var regEx = new Regex(@"\[TestMethod\]", RegexOptions.Multiline);
+            var attributes = new FileAttributes();
+            string line;
 
-            var testMethodCount = regEx.Matches(fileText).Count;
+            using (var r = new StringReader(fileText))
+            {
+                while ((line = r.ReadLine()) != null)
+                {
+                    if (line.Contains(@"[TestMethod]"))
+                    {
+                        attributes.TestCountChange++;
+                    }
 
-            return testMethodCount;
+                    attributes.LinesCountChange++;
+                }
+            }
+
+            return attributes;
         }
     }
 }

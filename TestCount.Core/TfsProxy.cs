@@ -40,7 +40,7 @@ namespace TestCount.Core
             var queryDateTo = new DateVersionSpec(parameters.To);
 
             var query = versionControl.QueryHistory(queryPath, VersionSpec.Latest, 0, RecursionType.Full, null, queryDateFrom, queryDateTo, int.MaxValue, true, false, false, true);
-            var changesetsInChronologicalOrder = query.OfType<Changeset>().ToList();
+            var changesetsInChronologicalOrder = query.OfType<Changeset>().OrderBy(cs => cs.ChangesetId).ToList();
 
             var fileChanges = this.GetFileChanges(changesetsInChronologicalOrder, parameters);
 

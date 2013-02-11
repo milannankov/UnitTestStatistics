@@ -12,6 +12,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -23,10 +24,14 @@
         </Grid>
 
         <Grid Grid.Column="0" Grid.Row="1">
+            <TextBlock Text="Total new lines:"/>
+        </Grid>
+        
+        <Grid Grid.Column="0" Grid.Row="2">
             <TextBlock Text="Tests per member:"/>
         </Grid>
 
-        <Grid Grid.Column="0" Grid.Row="2">
+        <Grid Grid.Column="0" Grid.Row="3">
             <TextBlock Text="Code line vs test lines:"/>
         </Grid>
 
@@ -35,10 +40,14 @@
         </Grid>
 
         <Grid Grid.Column="1" Grid.Row="1">
-            <TextBlock x:Name="testsPerMemberTextBlock"/>
+            <TextBlock x:Name="totalNewLinesTextBlock"/>
         </Grid>
 
         <Grid Grid.Column="1" Grid.Row="2">
+            <TextBlock x:Name="testsPerMemberTextBlock"/>
+        </Grid>
+
+        <Grid Grid.Column="1" Grid.Row="3">
             <TextBlock x:Name="codeVsTestsTextBlock"/>
         </Grid>
 

@@ -67,12 +67,14 @@ namespace TestCount.Core
                 else if (cleanedChangeType == (ChangeType.Delete | ChangeType.SourceRename))
                 {
                     var fileText = this.sourceControlProxy.GetFileText(changeInfoItem.ItemPath, changeInfoItem.ChangesetId + previousVersionDelta);
-                    info.AttributeChanges = this.GetChangedAttributes(fileText);
+                    var attributeChanges = this.GetChangedAttributes(fileText);
+                    info.AttributeChanges = new FileAttributes() { LinesCountChange = attributeChanges.LinesCountChange, TestCountChange = attributeChanges.TestCountChange * -1 };
                 }
                 else if (cleanedChangeType == (ChangeType.Delete))
                 {
                     var fileText = this.sourceControlProxy.GetFileText(changeInfoItem.ItemPath, changeInfoItem.ChangesetId + previousVersionDelta);
-                    info.AttributeChanges = this.GetChangedAttributes(fileText);
+                    var attributeChanges = this.GetChangedAttributes(fileText);
+                    info.AttributeChanges = new FileAttributes() { LinesCountChange = attributeChanges.LinesCountChange, TestCountChange = attributeChanges.TestCountChange * -1 };
                 }
                 else if (cleanedChangeType == (ChangeType.Undelete))
                 {

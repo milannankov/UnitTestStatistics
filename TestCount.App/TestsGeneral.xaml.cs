@@ -46,6 +46,7 @@ namespace TestCount.App
                 testPerMemberView.testData = data;
 
                 testPerMemberView.totalTestsTextBlock.Text = testPerMemberView.CalculateTotalTests().ToString();
+                testPerMemberView.totalNewLinesTextBlock.Text = testPerMemberView.CalculateTotalNewLines().ToString();
                 testPerMemberView.testsPerMemberTextBlock.Text = testPerMemberView.CalculateTestsPerMember().ToString();
                 testPerMemberView.codeVsTestsTextBlock.Text = testPerMemberView.CalculateTestsPerLine().ToString();
             }
@@ -54,6 +55,11 @@ namespace TestCount.App
         private int CalculateTotalTests()
         {
             return this.testData.Sum(fi => fi.AttributeChanges.TestCountChange);
+        }
+
+        private int CalculateTotalNewLines()
+        {
+            return this.testData.Sum(fi => fi.AttributeChanges.LinesCountChange);
         }
 
         private int CalculateTestsPerMember()

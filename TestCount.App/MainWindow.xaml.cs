@@ -50,10 +50,10 @@ namespace TestCount.App
             this.identityService = this.teamProjectCollection.GetService<IIdentityManagementService>();
 
             //this.pickerFrom.SelectedValue = new DateTime(2012, 10, 19, 7, 0, 0);
-            this.pickerFrom.SelectedValue = new DateTime(2012, 11, 1, 23, 0, 0);
+            this.pickerFrom.SelectedValue = new DateTime(2012, 10, 18, 23, 0, 0);
             //this.pickerTo.SelectedValue = new DateTime(2012, 11, 28, 23, 0, 0);
-            this.pickerTo.SelectedValue = new DateTime(2012, 11, 10, 23, 0, 0);
-            this.pathTextBox.Text = "$/WPF_Scrum/Current/Core/Data";
+            this.pickerTo.SelectedValue = DateTime.Now;// new DateTime(2012, 11, 10, 23, 0, 0);
+            this.pathTextBox.Text = "$/WPF_Scrum/Development/Core/Data";
 
             this.testsPerGroupView.IdentityService = new TfsIdentityServiceProxy(this.identityService);
 

@@ -17,40 +17,42 @@
     </UserControl.Resources>
     <Grid x:Name="layoutRoot">
         <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
 
-            <telerik:RadCartesianChart x:Name="RadChart1" Zoom="1,1">
+        <telerik:RadCartesianChart x:Name="RadChart1">
 
-                <telerik:RadCartesianChart.HorizontalAxis>
-                    <telerik:LogarithmicAxis LogarithmBase="10"/>
-                </telerik:RadCartesianChart.HorizontalAxis>
+            <telerik:RadCartesianChart.HorizontalAxis>
+                <telerik:LogarithmicAxis LogarithmBase="10"/>
+            </telerik:RadCartesianChart.HorizontalAxis>
 
-                <telerik:RadCartesianChart.VerticalAxis>
-                    <telerik:CategoricalAxis PlotMode="BetweenTicks"/>
-                </telerik:RadCartesianChart.VerticalAxis>
+            <telerik:RadCartesianChart.VerticalAxis>
+                <telerik:CategoricalAxis PlotMode="BetweenTicks"/>
+            </telerik:RadCartesianChart.VerticalAxis>
 
-                <telerik:RadCartesianChart.Series>
+            <telerik:RadCartesianChart.Series>
 
-                <telerik:BarSeries CategoryBinding="Comitter" ValueBinding="TestCountDelta" ItemsSource="{Binding}" ShowLabels="True">
-                    </telerik:BarSeries>
+                <telerik:BarSeries CategoryBinding="Comitter" ValueBinding="TestCountDelta" ItemsSource="{Binding}" ShowLabels="true">
+                    <telerik:BarSeries.LabelDefinitions>
+                        <telerik:ChartSeriesLabelDefinition HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </telerik:BarSeries.LabelDefinitions>
+                </telerik:BarSeries>
 
-                </telerik:RadCartesianChart.Series>
+            </telerik:RadCartesianChart.Series>
 
-                <telerik:RadCartesianChart.Behaviors>
-                    <telerik:ChartPanAndZoomBehavior ZoomMode="None" PanMode="Vertical"/>
-                    <telerik:ChartSelectionBehavior DataPointSelectionMode="Single" SelectionChanged="ChartSelectionBehavior_SelectionChanged" />
-                </telerik:RadCartesianChart.Behaviors>
+            <telerik:RadCartesianChart.Behaviors>
+                <telerik:ChartSelectionBehavior DataPointSelectionMode="Single" SelectionChanged="ChartSelectionBehavior_SelectionChanged" />
+            </telerik:RadCartesianChart.Behaviors>
 
-            </telerik:RadCartesianChart>
+        </telerik:RadCartesianChart>
 
-            <telerik:RadTreeView x:Name="changesetsTree" Grid.Column="1" MinWidth="350" BorderBrush="Gray" BorderThickness="1" Margin="5,0,0,0" Visibility="Collapsed">
-                <telerik:RadTreeView.ItemTemplate>
-                    <HierarchicalDataTemplate ItemsSource="{Binding Items}" ItemTemplate="{StaticResource TestChangeInfoTemplate}">
-                        <TextBlock Text="{Binding Changeset}" />
-                    </HierarchicalDataTemplate>
-                </telerik:RadTreeView.ItemTemplate>
-            </telerik:RadTreeView>
+        <telerik:RadTreeView x:Name="changesetsTree" Grid.Column="1" MinWidth="350" BorderBrush="Gray" BorderThickness="1" Margin="5,0,0,0" Visibility="Collapsed">
+            <telerik:RadTreeView.ItemTemplate>
+                <HierarchicalDataTemplate ItemsSource="{Binding Items}" ItemTemplate="{StaticResource TestChangeInfoTemplate}">
+                    <TextBlock Text="{Binding Changeset}" />
+                </HierarchicalDataTemplate>
+            </telerik:RadTreeView.ItemTemplate>
+        </telerik:RadTreeView>
     </Grid>
 </UserControl>

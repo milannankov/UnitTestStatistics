@@ -84,7 +84,7 @@ namespace TestCount.App
                     {
                         foreach (var memberGroupItem in memberIdentity.Groups)
                         {
-                            var aggregateData = new AggregateTestData() { Comitter = memberGroupItem.IdentityKey, TestCountDelta = testDataItem.AttributeChanges.TestCountChange };
+                            var aggregateData = new AggregateTestData() { Comitter = memberGroupItem.DisplayName, TestCountDelta = testDataItem.AttributeChanges.TestCountChange };
                             data.Add(aggregateData);
 
                             System.Diagnostics.Debug.WriteLine(memberGroupItem.IdentityKey + "\t" + testDataItem.Member + "\t" + testDataItem.AttributeChanges.TestCountChange.ToString() + "\t" + testDataItem.ChangesetId);
